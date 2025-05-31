@@ -2,7 +2,101 @@
 
 Generate natural language descriptions for images using deep learning. This project combines a pre-trained CNN (Xception) for feature extraction with an LSTM-based language model.
 
-## 🚀 Quick Start
+## �️ Environment Setup
+
+### System Requirements
+- **Python**: 3.7+ (3.8+ recommended)
+- **RAM**: 4+ GB (8+ GB for 8K training)
+- **Storage**: 2+ GB free space
+- **OS**: Windows, macOS, or Linux
+
+### Create Virtual Environment
+```bash
+# Create virtual environment
+python -m venv kenv
+
+# Activate environment (Linux/Mac)
+source kenv/bin/activate
+
+# Activate environment (Windows)
+kenv\Scripts\activate
+```
+
+### Install Dependencies
+```bash
+
+# Or install from requirements.txt (if available)
+pip install -r requirements.txt
+```
+
+### Verify Installation
+```bash
+# Test if everything is working
+python -c "import tensorflow as tf; print('TensorFlow version:', tf.__version__)"
+python -c "import numpy as np; print('NumPy version:', np.__version__)"
+python -c "from PIL import Image; print('Pillow is working')"
+```
+
+### Troubleshooting
+
+#### Common Issues:
+**1. TensorFlow Installation Problems:**
+```bash
+# For CPU-only (recommended for most users)
+pip install tensorflow-cpu
+
+# For GPU support (requires CUDA setup)
+pip install tensorflow-gpu
+```
+
+**2. Pillow/PIL Issues:**
+```bash
+# If Pillow fails to install
+pip install --upgrade pip
+pip install Pillow
+```
+
+**3. Memory Issues During Training:**
+```bash
+# Reduce batch size in training scripts
+# Edit train_simple.py or train_full_8k.py:
+# batch_size = 32  # Instead of 64
+```
+
+### Automated Setup (Recommended)
+
+#### Linux/Mac:
+```bash
+# Run the setup script
+./setup.sh
+```
+
+#### Windows:
+```cmd
+# Run the setup script
+setup.bat
+```
+
+### Manual Setup
+```bash
+# 1. Create environment
+python -m venv kenv
+
+# 2. Activate environment
+source kenv/bin/activate  # Linux/Mac
+# kenv\Scripts\activate   # Windows
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Verify installation
+python status_check.py
+
+# 5. Start using
+python demo_simple.py
+```
+
+## �🚀 Quick Start
 
 ```bash
 # Activate environment
@@ -18,6 +112,10 @@ python demo_simple.py
 ## 📁 Project Structure
 
 ```
+├── README.md                # This file - complete guide
+├── requirements.txt         # Python dependencies
+├── setup.sh                 # Automated setup (Linux/Mac)
+├── setup.bat                # Automated setup (Windows)
 ├── train_simple.py          # Train model (500 images, ~10 min)
 ├── train_full_8k.py         # Train on full dataset (6000 images, 2-4 hours)
 ├── demo_simple.py           # Interactive testing (recommended)
