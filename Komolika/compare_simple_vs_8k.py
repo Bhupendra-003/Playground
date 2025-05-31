@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 """
-Compare captions from simple model (500 images) vs 8k model (full dataset)
+Compare captions from Simple Model (500 images) vs 8K Model (6000 images)
 """
 
-import argparse
+import os
+import sys
 import numpy as np
 from pickle import load
 from PIL import Image
-import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.applications.xception import Xception, preprocess_input
 from tensorflow.keras.layers import Input, Dense, LSTM, Embedding, Dropout, add
 from tensorflow.keras.models import Model
-import os
 
 def extract_features(filename, model):
     """Extract features from an image using Xception model"""
@@ -93,14 +92,7 @@ def define_model(vocab_size, max_length):
 
 def load_model_and_tokenizer(model_path, tokenizer_path, model_name):
     """Load a model and tokenizer"""
-    print(f"📥 Loading {model_name}...")
-    
-    if not os.path.exists(model_path):
-        print(f"❌ {model_name} not found at {model_path}")
-        return None, None, None, None
-    
-    if not os.path.exists(tokenizer_path):
-        print(f"❌ Tokenizer for {model_name} not found at {tokenizer_path}")
+    if not os.path.exists(model_path) or not os.path.exists(tokenizer_path):
         return None, None, None, None
     
     try:
@@ -113,7 +105,6 @@ def load_model_and_tokenizer(model_path, tokenizer_path, model_name):
         model = define_model(vocab_size, max_length)
         model.load_weights(model_path)
         
-        print(f"✓ {model_name} loaded (vocab: {vocab_size:,} words)")
         return model, tokenizer, vocab_size, max_length
         
     except Exception as e:
@@ -121,54 +112,70 @@ def load_model_and_tokenizer(model_path, tokenizer_path, model_name):
         return None, None, None, None
 
 def main():
-    parser = argparse.ArgumentParser(description='Compare captions from simple vs 8k models')
-    parser.add_argument('-i', '--image', required=True, help='Path to the image file')
-    parser.add_argument('--show', action='store_true', help='Display the image')
+    print("🔍 MODEL COMPARISON: Simple vs 8K")
+    print("=" * 60)
     
-    args = parser.parse_args()
+    if len(sys.argv) < 2:
+        print("Usage: python compare_simple_vs_8k.py <image_path>")
+        print()
+        print("Examples:")
+        print("  python compare_simple_vs_8k.py Flickr8k_Dataset/1000268201_693b08cb0e.jpg")
+        print("  python compare_simple_vs_8k.py your_own_image.jpg")
+        print()
+        print("This script compares captions from:")
+        print("  🔹 Simple Model: 500 images, ~2,272 vocabulary")
+        print("  🔸 8K Model: 6,000 images, ~8,000+ vocabulary")
+        return
     
-    print("🔍 MODEL COMPARISON: Simple (500 images) vs 8K (full dataset)")
-    print("=" * 70)
-    print(f"📁 Image: {args.image}")
+    image_path = sys.argv[1]
+    if not os.path.exists(image_path):
+        print(f"❌ Image not found: {image_path}")
+        return
+    
+    print(f"📁 Image: {image_path}")
+    print("=" * 60)
     
     # Load both models
+    print("📥 Loading models...")
+    
     simple_model, simple_tokenizer, simple_vocab, simple_max_len = load_model_and_tokenizer(
-        'models/model_simple.h5', 'models/tokenizer_simple.pkl', 'Simple Model (500 images)'
+        'models/model_simple.h5', 'models/tokenizer_simple.pkl', 'Simple Model'
     )
     
     model_8k, tokenizer_8k, vocab_8k, max_len_8k = load_model_and_tokenizer(
-        'models/model_8k_best.h5', 'models/tokenizer_8k.pkl', '8K Model (full dataset)'
+        'models/model_8k_best.h5', 'models/tokenizer_8k.pkl', '8K Model'
     )
     
     # Check if we have at least one model
     if simple_model is None and model_8k is None:
-        print("❌ No models found! Please train at least one model first.")
+        print("❌ No models found!")
+        print()
+        print("Train at least one model:")
+        print("  python train_simple.py (quick, 10 minutes)")
+        print("  python train_full_8k.py (better quality, 2-4 hours)")
         return
     
     # Load Xception model for feature extraction
     print("🔍 Loading Xception model for feature extraction...")
     xception_model = Xception(include_top=False, pooling="avg")
-    print("✓ Xception model loaded")
     
     # Extract features from the image
     print("🔍 Extracting features from image...")
-    photo = extract_features(args.image, xception_model)
+    photo = extract_features(image_path, xception_model)
     if photo is None:
         return
-    print("✓ Features extracted")
     
-    print("\n" + "="*70)
+    print("\n" + "="*60)
     print("🎯 CAPTION COMPARISON:")
-    print("="*70)
+    print("="*60)
     
     # Generate caption with simple model
     if simple_model is not None:
         print("📝 Generating caption with Simple Model...")
         simple_caption = generate_desc(simple_model, simple_tokenizer, photo, simple_max_len)
         simple_caption = simple_caption.replace('start ', '').replace(' end', '')
-        print(f"🔹 Simple Model (500 images, 5 epochs):")
+        print(f"🔹 Simple Model (500 images, {simple_vocab:,} words):")
         print(f"   {simple_caption}")
-        print(f"   Vocabulary: {simple_vocab:,} words")
     else:
         print("🔹 Simple Model: Not available")
         print("   Run: python train_simple.py")
@@ -180,14 +187,13 @@ def main():
         print("📝 Generating caption with 8K Model...")
         caption_8k = generate_desc(model_8k, tokenizer_8k, photo, max_len_8k)
         caption_8k = caption_8k.replace('start ', '').replace(' end', '')
-        print(f"🔸 8K Model (6000 images, 20 epochs):")
+        print(f"🔸 8K Model (6000 images, {vocab_8k:,} words):")
         print(f"   {caption_8k}")
-        print(f"   Vocabulary: {vocab_8k:,} words")
     else:
         print("🔸 8K Model: Not available")
         print("   Run: python train_full_8k.py")
     
-    print("="*70)
+    print("="*60)
     
     # Show analysis if both models are available
     if simple_model is not None and model_8k is not None:
@@ -197,33 +203,22 @@ def main():
         simple_words = set(simple_caption.split())
         model_8k_words = set(caption_8k.split())
         
-        print(f"   Simple model caption length: {len(simple_words)} unique words")
-        print(f"   8K model caption length: {len(model_8k_words)} unique words")
+        print(f"   Simple model caption: {len(simple_words)} unique words")
+        print(f"   8K model caption: {len(model_8k_words)} unique words")
         
         if simple_words != model_8k_words:
             print("   ✓ Models generated different captions")
+            
+            # Show unique words
+            only_in_8k = model_8k_words - simple_words
+            only_in_simple = simple_words - model_8k_words
+            
+            if only_in_8k:
+                print(f"   🔸 Words only in 8K model: {', '.join(sorted(only_in_8k))}")
+            if only_in_simple:
+                print(f"   🔹 Words only in Simple model: {', '.join(sorted(only_in_simple))}")
         else:
             print("   ⚠️ Models generated identical captions")
-    
-    # Display image if requested
-    if args.show:
-        try:
-            img = Image.open(args.image)
-            plt.figure(figsize=(12, 8))
-            plt.imshow(img)
-            
-            title_parts = []
-            if simple_model is not None:
-                title_parts.append(f"Simple: {simple_caption}")
-            if model_8k is not None:
-                title_parts.append(f"8K: {caption_8k}")
-            
-            plt.title("\n".join(title_parts), fontsize=12, wrap=True)
-            plt.axis('off')
-            plt.tight_layout()
-            plt.show()
-        except Exception as e:
-            print(f"Could not display image: {e}")
 
 if __name__ == '__main__':
     main()

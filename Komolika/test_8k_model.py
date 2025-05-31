@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Test script for the 8k-trained model
+Test script specifically for the 8K-trained model
 """
 
-import argparse
+import os
+import sys
 import numpy as np
 from pickle import load
 from PIL import Image
-import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.applications.xception import Xception, preprocess_input
@@ -91,81 +91,88 @@ def define_model(vocab_size, max_length):
     return model
 
 def main():
-    parser = argparse.ArgumentParser(description='Generate caption for an image using 8k-trained model')
-    parser.add_argument('-i', '--image', required=True, help='Path to the image file')
-    parser.add_argument('--model', default='models/model_8k_best.h5', help='Path to the trained model')
-    parser.add_argument('--tokenizer', default='models/tokenizer_8k.pkl', help='Path to the tokenizer')
-    parser.add_argument('--max_length', type=int, default=35, help='Maximum caption length')
-    parser.add_argument('--show', action='store_true', help='Display the image')
+    print("🚀 8K MODEL TESTER")
+    print("=" * 50)
     
-    args = parser.parse_args()
-    
-    print("🖼️  IMAGE CAPTION GENERATION (8K-Trained Model)")
-    print("=" * 60)
-    print(f"📁 Image: {args.image}")
-    print(f"🧠 Model: {args.model}")
-    print(f"🔤 Tokenizer: {args.tokenizer}")
-    
-    # Load tokenizer
-    try:
-        tokenizer = load(open(args.tokenizer, "rb"))
-        vocab_size = len(tokenizer.word_index) + 1
-        print(f"✓ Tokenizer loaded. Vocabulary size: {vocab_size:,}")
-    except Exception as e:
-        print(f"✗ Error loading tokenizer: {e}")
-        print("Make sure you've trained the 8k model first: python train_full_8k.py")
+    # Check if 8K model exists
+    if not os.path.exists('models/model_8k_best.h5'):
+        print("❌ 8K model not found!")
+        print()
+        print("The 8K model hasn't been trained yet.")
+        print("To train it, run:")
+        print("  python train_full_8k.py")
+        print()
+        print("This will:")
+        print("  - Train on 6,000 images (vs 500 in simple model)")
+        print("  - Take 2-4 hours")
+        print("  - Create a much better model with 8,000+ vocabulary")
+        print("  - Produce more detailed and accurate captions")
+        print()
+        print("After training, you can test it with:")
+        print("  python test_8k_model.py your_image.jpg")
         return
     
-    # Create model architecture and load weights
+    if not os.path.exists('models/tokenizer_8k.pkl'):
+        print("❌ 8K tokenizer not found!")
+        return
+    
+    if len(sys.argv) < 2:
+        print("Usage: python test_8k_model.py <image_path>")
+        print()
+        print("Examples:")
+        print("  python test_8k_model.py Flickr8k_Dataset/1000268201_693b08cb0e.jpg")
+        print("  python test_8k_model.py your_own_image.jpg")
+        return
+    
+    image_path = sys.argv[1]
+    if not os.path.exists(image_path):
+        print(f"❌ Image not found: {image_path}")
+        return
+    
     try:
-        print("🏗️  Creating model architecture...")
-        model = define_model(vocab_size, args.max_length)
+        # Load tokenizer
+        tokenizer = load(open('models/tokenizer_8k.pkl', "rb"))
+        vocab_size = len(tokenizer.word_index) + 1
+        max_length = 35
+        
+        print(f"✓ 8K Tokenizer loaded. Vocabulary size: {vocab_size:,}")
+        
+        # Create and load model
+        print("🏗️  Creating 8K model architecture...")
+        model = define_model(vocab_size, max_length)
         print("✓ Model architecture created")
         
-        print("📥 Loading model weights...")
-        model.load_weights(args.model)
-        print("✓ Model weights loaded successfully")
+        print("📥 Loading 8K model weights...")
+        model.load_weights('models/model_8k_best.h5')
+        print("✓ 8K model weights loaded successfully")
+        
+        # Load Xception model for feature extraction
+        print("🔍 Loading Xception model for feature extraction...")
+        xception_model = Xception(include_top=False, pooling="avg")
+        print("✓ Xception model loaded")
+        
+        # Extract features
+        print(f"📸 Processing: {image_path}")
+        print("🔍 Extracting features...")
+        photo = extract_features(image_path, xception_model)
+        if photo is None:
+            return
+        
+        # Generate caption
+        print("📝 Generating caption...")
+        description = generate_desc(model, tokenizer, photo, max_length)
+        
+        # Clean up the description
+        description = description.replace('start ', '').replace(' end', '')
+        
+        print("\n" + "="*60)
+        print("🎯 8K MODEL CAPTION:")
+        print(f"   {description}")
+        print("="*60)
+        print(f"📊 Model trained on 6,000 images with {vocab_size:,} vocabulary")
+        
     except Exception as e:
-        print(f"✗ Error loading model: {e}")
-        print("Make sure you've trained the 8k model first: python train_full_8k.py")
-        return
-    
-    # Load Xception model for feature extraction
-    print("🔍 Loading Xception model for feature extraction...")
-    xception_model = Xception(include_top=False, pooling="avg")
-    print("✓ Xception model loaded")
-    
-    # Extract features from the image
-    print("🔍 Extracting features from image...")
-    photo = extract_features(args.image, xception_model)
-    if photo is None:
-        return
-    print("✓ Features extracted")
-    
-    # Generate caption
-    print("📝 Generating caption...")
-    description = generate_desc(model, tokenizer, photo, args.max_length)
-    
-    # Clean up the description
-    description = description.replace('start ', '').replace(' end', '')
-    
-    print("\n" + "="*60)
-    print("🎯 GENERATED CAPTION (8K Model):")
-    print(f"   {description}")
-    print("="*60)
-    
-    # Display image if requested
-    if args.show:
-        try:
-            img = Image.open(args.image)
-            plt.figure(figsize=(10, 6))
-            plt.imshow(img)
-            plt.title(f"8K Model Caption: {description}", fontsize=14, wrap=True)
-            plt.axis('off')
-            plt.tight_layout()
-            plt.show()
-        except Exception as e:
-            print(f"Could not display image: {e}")
+        print(f"❌ Error: {e}")
 
 if __name__ == '__main__':
     main()
