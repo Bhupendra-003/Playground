@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Caption Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">
+                    <i class="fas fa-camera"></i>
+                    Image Caption Generator
+                </h1>
+                <p class="subtitle">Generate natural language descriptions for your images using AI</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Model Selection -->
+            <section class="model-selection">
+                <h2 class="section-title">
+                    <i class="fas fa-brain"></i>
+                    Select Model
+                </h2>
+                <div class="model-grid">
+                    {% for model in models %}
+                    <div class="model-card" data-model="{{ model.id }}">
+                        <div class="model-header">
+                            <h3 class="model-name">{{ model.name }}</h3>
+                            <span class="model-badge">{{ model.vocab_size }}</span>
+                        </div>
+                        <p class="model-description">{{ model.description }}</p>
+                        <div class="model-status">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Available</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    {% if not models %}
+                    <div class="no-models">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>No Models Available</h3>
+                        <p>Please train a model first by running:</p>
+                        <code>python train_simple.py</code>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Image Upload -->
+            <section class="upload-section">
+                <h2 class="section-title">
+                    <i class="fas fa-upload"></i>
+                    Upload Image
+                </h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <h3>Drag & Drop your image here</h3>
+                        <p>or <span class="browse-text">browse files</span></p>
+                        <input type="file" id="imageInput" accept="image/*" hidden>
+                    </div>
+                </div>
+
+                <!-- Image Preview -->
+                <div class="image-preview" id="imagePreview" style="display: none;">
+                    <img id="previewImg" src="" alt="Preview">
+                    <div class="image-info">
+                        <span id="imageName"></span>
+                        <button class="remove-btn" id="removeImage">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Generate Button -->
+            <section class="generate-section">
+                <button class="generate-btn" id="generateBtn" disabled>
+                    <i class="fas fa-magic"></i>
+                    Generate Caption
+                </button>
+            </section>
+
+            <!-- Results -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <h2 class="section-title">
+                    <i class="fas fa-comment-alt"></i>
+                    Generated Caption
+                </h2>
+                <div class="result-card">
+                    <div class="result-header">
+                        <span class="model-used" id="modelUsed"></span>
+                        <span class="vocab-info" id="vocabInfo"></span>
+                    </div>
+                    <div class="caption-text" id="captionText"></div>
+                    <div class="result-actions">
+                        <button class="copy-btn" id="copyBtn">
+                            <i class="fas fa-copy"></i>
+                            Copy
+                        </button>
+                        <button class="share-btn" id="shareBtn">
+                            <i class="fas fa-share"></i>
+                            Share
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Loading -->
+            <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <h3>Generating Caption...</h3>
+                    <p>This may take a few seconds</p>
+                </div>
+            </div>
+
+            <!-- Error Message -->
+            <div class="error-message" id="errorMessage" style="display: none;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="errorText"></span>
+                <button class="close-error" id="closeError">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2024 Image Caption Generator. Built with TensorFlow & Flask.</p>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">
+                        <i class="fab fa-github"></i>
+                        GitHub
+                    </a>
+                    <a href="#" class="footer-link">
+                        <i class="fas fa-book"></i>
+                        Documentation
+                    </a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
