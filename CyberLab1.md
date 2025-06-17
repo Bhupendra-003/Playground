@@ -1,4 +1,4 @@
-# OWASP Methodology
+# OWASP Methodology - Minor
 
 The OWASP Testing Guide (WSTG) is globally recognized framework for conducting security testing for web applications.
 - It Breaks down process into structured phases.
